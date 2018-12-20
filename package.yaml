@@ -1,7 +1,7 @@
 name: interpolator
-version: '1.0'
+version: '0.1'
 maintainer: TVision Insights
-license: AllRightsReserved
+license: MIT
 
 default-extensions:
   - ApplicativeDo

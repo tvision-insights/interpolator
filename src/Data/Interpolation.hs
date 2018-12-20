@@ -188,7 +188,7 @@ maybeGen x = frequency [(1, pure Nothing), (3, Just <$> x)]
 
 noEnv, noColons :: Gen T.Text
 noEnv = fmap T.pack $ arbitrary `suchThat` (\ s -> not ("_env:" `isPrefixOf` s) && not (null s))
-noColons = fmap T.pack . listOf1 $ arbitrary `suchThat` (\ c -> c /= ':')
+noColons = fmap T.pack . listOf1 $ arbitrary `suchThat` (/= ':')
 
 instance Arbitrary TemplateKey where
   arbitrary = TemplateKey <$> noColons
