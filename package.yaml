@@ -1,0 +1,68 @@
+name: interpolator
+version: '1.0'
+maintainer: TVision Insights
+license: AllRightsReserved
+
+default-extensions:
+  - ApplicativeDo
+  - ConstraintKinds
+  - DataKinds
+  - DeriveDataTypeable
+  - DeriveGeneric
+  - EmptyDataDecls
+  - FlexibleContexts
+  - FlexibleInstances
+  - FunctionalDependencies
+  - GADTs
+  - GeneralizedNewtypeDeriving
+  - LambdaCase
+  - MultiParamTypeClasses
+  - NamedFieldPuns
+  - NoImplicitPrelude
+  - NoMonomorphismRestriction
+  - OverloadedStrings
+  - PackageImports
+  - PolyKinds
+  - QuasiQuotes
+  - RankNTypes
+  - RecordWildCards
+  - ScopedTypeVariables
+  - StandaloneDeriving
+  - TemplateHaskell
+  - TupleSections
+  - TypeApplications
+  - TypeFamilies
+  - TypeOperators
+  - ViewPatterns
+
+ghc-options:
+  - -Wall
+  - -Werror
+  - -Wredundant-constraints
+  - -fwarn-tabs
+  - -O2
+
+dependencies:
+  - aeson
+  - base
+  - containers
+  - either
+  - mono-traversable
+  - mtl
+  - profunctors
+  - product-profunctors
+  - QuickCheck
+  - template-haskell
+  - text
+
+library:
+  source-dirs: src
+
+tests:
+  spec:
+    main: Spec.hs
+    source-dirs:
+      - test
+    dependencies:
+      - hspec
+      - interpolator
