@@ -19,6 +19,7 @@ cache:
 # things like change flags or use --stack-yaml to point to a different
 # file.
 env:
+  - ARGS=""
   - ARGS="--resolver lts"
   - ARGS="--resolver nightly"
 
