@@ -37,7 +37,6 @@ default-extensions:
 
 ghc-options:
   - -Wall
-  - -Werror
   - -Wredundant-constraints
   - -fwarn-tabs
   - -O2

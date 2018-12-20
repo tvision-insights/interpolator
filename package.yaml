@@ -1,7 +1,13 @@
 name: interpolator
 version: '0.1'
+author: Dan Fithian <daniel.m.fithian@gmail.com>
 maintainer: TVision Insights
 license: MIT
+synopsis: 'Runtime interpolation of environment variables in records using profunctors'
+description: |
+  Runtime interpolation of environment variables in records using profunctors. See
+  https://github.com/tvision-insights/interpolator/README.md.
+category: Data
 
 default-extensions:
   - ApplicativeDo
@@ -37,14 +43,13 @@ default-extensions:
 
 ghc-options:
   - -Wall
-  - -Werror
   - -Wredundant-constraints
   - -fwarn-tabs
   - -O2
 
 dependencies:
   - aeson
-  - base
+  - base < 5.0
   - containers
   - either
   - mono-traversable
