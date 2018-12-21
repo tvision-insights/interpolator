@@ -6,7 +6,7 @@ license: MIT
 synopsis: 'Runtime interpolation of environment variables in records using profunctors'
 description: |
   Runtime interpolation of environment variables in records using profunctors. See
-  the [README](https://github.com/tvision-insights/interpolator/README.md).
+  the [README](https://github.com/tvision-insights/interpolator/blob/master/README.md).
 category: Data
 stability: experimental
 homepage: https://github.com/tvision-insights/interpolator
