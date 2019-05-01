@@ -6,6 +6,7 @@ import Control.Applicative ((<|>))
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Reader (Reader, asks, runReader)
 import Data.Aeson (FromJSON, ToJSON, Value (String), parseJSON, toJSON, withText)
+import Data.Char (isAlphaNum)
 import Data.Containers (mapFromList, setFromList, setToList)
 import Data.Either.Validation (Validation (Failure, Success), validationToEither)
 import Data.Map (Map, lookup)
@@ -186,12 +187,12 @@ instance (ToTemplateValue a, ToJSON a) => ToJSON (Uninterpolated a) where
 maybeGen :: Gen a -> Gen (Maybe a)
 maybeGen x = frequency [(1, pure Nothing), (3, Just <$> x)]
 
-noEnv, noColons :: Gen T.Text
+noEnv, varNameAllowed :: Gen T.Text
 noEnv = fmap T.pack $ arbitrary `suchThat` (\ s -> not ("_env:" `isPrefixOf` s) && not (null s))
-noColons = fmap T.pack . listOf1 $ arbitrary `suchThat` (/= ':')
+varNameAllowed = fmap T.pack . listOf1 $ arbitrary `suchThat` (\c -> isAlphaNum c || c == '_')
 
 instance Arbitrary TemplateKey where
-  arbitrary = TemplateKey <$> noColons
+  arbitrary = TemplateKey <$> varNameAllowed
 
 instance {-# OVERLAPPABLE #-} Arbitrary a => Arbitrary (Uninterpolated a) where
   arbitrary = oneof
@@ -202,5 +203,5 @@ instance {-# OVERLAPPABLE #-} Arbitrary a => Arbitrary (Uninterpolated a) where
 instance {-# OVERLAPPING #-} Arbitrary (Uninterpolated T.Text) where
   arbitrary = oneof
     [ Literal <$> noEnv
-    , Templated <$> (Template <$> arbitrary <*> maybeGen noColons)
+    , Templated <$> (Template <$> arbitrary <*> maybeGen noEnv)
     ]
