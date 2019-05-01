@@ -4,6 +4,7 @@ Outline for releasing this package to Hackage and Stackage
 
 ## Steps
 
+* Bump version in `package.yaml` in this repository. Create a PR with this change.
 * `git tag <version> -m "Release version <version>"`
 * `git push origin --tags`
 * `stack sdist`
