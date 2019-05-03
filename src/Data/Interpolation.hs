@@ -18,7 +18,7 @@ import Data.Sequences (isPrefixOf)
 import Data.Set (Set)
 import qualified Data.Text as T
 import System.Environment (getEnvironment)
-import Test.QuickCheck (Arbitrary, Gen, arbitrary, frequency, listOf1, oneof, suchThat)
+import Test.QuickCheck (Arbitrary, Arbitrary1, arbitrary, arbitrary1, liftArbitrary, listOf1, oneof, suchThat)
 import Text.Read (readMaybe)
 
 -- |Newtype wrapper for an environment variable key.
@@ -184,24 +184,19 @@ instance (ToTemplateValue a, ToJSON a) => ToJSON (Uninterpolated a) where
     Templated x -> toJSON x
     Literal x -> toJSON x
 
-maybeGen :: Gen a -> Gen (Maybe a)
-maybeGen x = frequency [(1, pure Nothing), (3, Just <$> x)]
-
-noEnv, varNameAllowed :: Gen T.Text
-noEnv = fmap T.pack $ arbitrary `suchThat` (\ s -> not ("_env:" `isPrefixOf` s) && not (null s))
-varNameAllowed = fmap T.pack . listOf1 $ arbitrary `suchThat` (\c -> isAlphaNum c || c == '_')
-
 instance Arbitrary TemplateKey where
   arbitrary = TemplateKey <$> varNameAllowed
+    where varNameAllowed = fmap T.pack . listOf1 $ arbitrary `suchThat` (\c -> isAlphaNum c || c == '_')
+
+instance Arbitrary1 Uninterpolated where
+  liftArbitrary g = oneof
+    [ Literal <$> g
+    , Templated <$> (Template <$> arbitrary <*> liftArbitrary g)
+    ]
 
 instance {-# OVERLAPPABLE #-} Arbitrary a => Arbitrary (Uninterpolated a) where
-  arbitrary = oneof
-    [ Literal <$> arbitrary
-    , Templated <$> (Template <$> arbitrary <*> arbitrary)
-    ]
+  arbitrary = arbitrary1
 
 instance {-# OVERLAPPING #-} Arbitrary (Uninterpolated T.Text) where
-  arbitrary = oneof
-    [ Literal <$> noEnv
-    , Templated <$> (Template <$> arbitrary <*> maybeGen noEnv)
-    ]
+  arbitrary = liftArbitrary noEnv
+    where noEnv = fmap T.pack $ arbitrary `suchThat` (\ s -> not ("_env:" `isPrefixOf` s) && not (null s))
