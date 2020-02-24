@@ -8,8 +8,20 @@ import Data.Semigroup ((<>))
 import Data.Sequences (replicateM, singleton)
 import Data.Traversable (for)
 import Language.Haskell.TH
-  (Con (NormalC), Dec (DataD, NewtypeD), Info (TyConI), Name, Q, newName, reify)
+  ( Con (NormalC, RecC)
+  , Dec (DataD, NewtypeD)
+  , Info (TyConI)
+  , Name
+  , Q
+  , Type (AppT, ConT, VarT)
+  , lookupTypeName
+  , mkName
+  , nameBase
+  , newName
+  , reify
+  )
 import qualified Language.Haskell.TH.Lib as TH
+import Language.Haskell.TH.Syntax (returnQ)
 
 import Data.Interpolation (Interpolator (Interpolator), runInterpolator)
 
@@ -68,3 +80,55 @@ makeInterpolatorSumInstance tyName = do
             [TH.clause [] (TH.normalB [| Interpolator $(TH.lamCaseE matches) |]) []]
         ]
     ]
+
+-- |Make a fully-polymorphic data type and type aliases for "normal" and "uninterpolated" variants.
+--
+-- For example:
+--
+-- @
+--   withUninterpolatedRecord [d|
+--     data Foo = Foo
+--       { fooBar :: String
+--       , fooBaz :: Maybe Int
+--       } deriving (Eq, Show)
+--     |]
+-- @
+--
+-- Is equivalent to:
+--
+-- @
+--   data Foo' bar baz = Foo
+--     { fooBar :: bar
+--     , fooBaz :: baz
+--     } deriving (Eq, Show)
+--   type Foo = Foo' String (Maybe Int)
+--   type UninterpolatedFoo = Foo' (Uninterpolated String) (Maybe (Uninterpolated Int))
+-- @
+--
+-- __Note:__ the trailing @|]@ of the quasi quote bracket has to be indented or a parse error will occur.
+--
+-- TODO: pattern match on certain Functors (e.g. Maybe) and interpolate the inner type, as seen in
+-- the example above.
+withUninterpolatedRecord :: Q [Dec] -> Q [Dec]
+withUninterpolatedRecord qDecs = do
+  decs <- qDecs
+  let [DataD [] tName [] Nothing constrs deriv] = decs
+      [RecC cName vars] = constrs
+      primedName = mkName (nameBase tName <> "'")
+      simpleName = mkName . nameBase
+      toTV (n, _, _) = TH.plainTV (simpleName n)  -- TODO: strip prefix?
+      tvs = toTV <$> vars
+      toField (n, s, _) = (simpleName n, s, VarT (simpleName n))
+      fs = toField <$> vars
+      con = TH.recC (simpleName cName) (returnQ <$> fs)
+      toSimpleType (_, _, t) = t
+  primed <- TH.dataD (pure []) primedName tvs Nothing [con] (returnQ <$> deriv)
+  normalSyn <- TH.tySynD (simpleName tName) [] $
+    returnQ $ foldl (\ t v -> AppT t (toSimpleType v)) (ConT primedName) vars
+  uninterp <- lookupTypeName "Uninterpolated" >>= maybe (fail "Uninterpolated not in scope") returnQ
+  uninterpolatedSyn <- TH.tySynD (mkName $ "Uninterpolated" <> nameBase tName) [] $
+    returnQ $ foldl (\ t v -> AppT t (AppT (ConT uninterp) (toSimpleType v))) (ConT primedName) vars
+  pure [primed, normalSyn, uninterpolatedSyn]
+
+-- TODO:
+-- withUninterpolatedSum?

@@ -14,18 +14,18 @@ import Test.Hspec (Spec, describe, it, shouldBe)
 import Data.Interpolation
 import Data.Interpolation.TH
 
-data Bar' a b = Bar
-  { barA :: a
-  , barB :: b
-  } deriving (Eq, Ord, Show)
-type UninterpolatedBar = Bar' (Uninterpolated Int) (Uninterpolated T.Text)
-type Bar = Bar' Int T.Text
+withUninterpolatedRecord [d|
+  data Bar = Bar
+    { barA :: Int
+    , barB :: T.Text
+    } deriving (Eq, Ord, Show)
+  |]
 
 data Foo' a b c
-  = Foo1 a
-  | Foo2 b
-  | Foo3 c
-  | Foo4
+  = FooBar a
+  | FooInt b
+  | FooBool c
+  | FooNone
   deriving (Eq, Ord, Show)
 type UninterpolatedFoo = Foo' UninterpolatedBar (Uninterpolated Int) (Uninterpolated Bool)
 type Foo = Foo' Bar Int Bool
@@ -58,7 +58,7 @@ spec = describe "Shared.Interpolation.THSpec" $ do
   it "if it compiles, it worked" True
 
   it "interpolates over all branches" $ do
-    run (Foo1 (Bar (Templated $ Template key1 Nothing) (Templated $ Template key2 Nothing))) `shouldBe` Right (Foo1 $ Bar 1 "asdf")
-    run (Foo2 (Templated $ Template key3 Nothing)) `shouldBe` Right (Foo2 2)
-    run (Foo3 (Templated $ Template key4 Nothing)) `shouldBe` Right (Foo3 True)
-    run Foo4 `shouldBe` Right Foo4
+    run (FooBar (Bar (Templated $ Template key1 Nothing) (Templated $ Template key2 Nothing))) `shouldBe` Right (FooBar $ Bar 1 "asdf")
+    run (FooInt (Templated $ Template key3 Nothing)) `shouldBe` Right (FooInt 2)
+    run (FooBool (Templated $ Template key4 Nothing)) `shouldBe` Right (FooBool True)
+    run FooNone `shouldBe` Right FooNone
