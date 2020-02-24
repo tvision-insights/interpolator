@@ -81,7 +81,8 @@ makeInterpolatorSumInstance tyName = do
         ]
     ]
 
--- |Make a fully-polymorphic data type and type aliases for "normal" and "uninterpolated" variants.
+-- |When applied to a simple, monomorphic record data type, substitute a fully-polymorphic data type
+-- and type aliases for "normal" and "uninterpolated" variants.
 --
 -- For example:
 --
@@ -107,9 +108,10 @@ makeInterpolatorSumInstance tyName = do
 --
 -- __Note:__ the trailing @|]@ of the quasi quote bracket has to be indented or a parse error will occur.
 --
--- Whenever the type of a field is itself an application, 'Uninterpolated' is applied to the /inner/
--- type, which is probably what you want for 'Maybe' (as in the example), '[]', and so on, but won't
--- work in other cases where there's a 'FromTemplateValue' instance for some non-trivial user type.
+-- Whenever the type of a field is itself an application, 'Data.Interpolation.Uninterpolated' is
+-- applied to the /inner/ type, which is probably what you want for 'Maybe' (as in the example),
+-- @[]@, and so on, but won't work in other cases where there's a
+-- 'Data.Interpolation.FromTemplateValue' instance for some non-trivial user type.
 withUninterpolatedRecord :: Q [Dec] -> Q [Dec]
 withUninterpolatedRecord qDecs = do
   decs <- qDecs
