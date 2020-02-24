@@ -17,7 +17,8 @@ import Data.Interpolation.TH
 withUninterpolatedRecord [d|
   data Bar = Bar
     { barA :: Int
-    , barB :: T.Text
+    , barB :: Maybe T.Text
+    , barC :: [Bool]
     } deriving (Eq, Ord, Show)
   |]
 
@@ -58,7 +59,8 @@ spec = describe "Shared.Interpolation.THSpec" $ do
   it "if it compiles, it worked" True
 
   it "interpolates over all branches" $ do
-    run (FooBar (Bar (Templated $ Template key1 Nothing) (Templated $ Template key2 Nothing))) `shouldBe` Right (FooBar $ Bar 1 "asdf")
+    run (FooBar (Bar (Templated $ Template key1 Nothing) (Just . Templated $ Template key2 Nothing) []))
+      `shouldBe` Right (FooBar $ Bar 1 (Just "asdf") [])
     run (FooInt (Templated $ Template key3 Nothing)) `shouldBe` Right (FooInt 2)
     run (FooBool (Templated $ Template key4 Nothing)) `shouldBe` Right (FooBool True)
     run FooNone `shouldBe` Right FooNone

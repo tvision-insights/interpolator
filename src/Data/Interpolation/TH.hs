@@ -107,11 +107,13 @@ makeInterpolatorSumInstance tyName = do
 --
 -- __Note:__ the trailing @|]@ of the quasi quote bracket has to be indented or a parse error will occur.
 --
--- TODO: pattern match on certain Functors (e.g. Maybe) and interpolate the inner type, as seen in
--- the example above.
+-- Whenever the type of a field is itself an application, 'Uninterpolated' is applied to the /inner/
+-- type, which is probably what you want for 'Maybe' (as in the example), '[]', and so on, but won't
+-- work in other cases where there's a 'FromTemplateValue' instance for some non-trivial user type.
 withUninterpolatedRecord :: Q [Dec] -> Q [Dec]
 withUninterpolatedRecord qDecs = do
   decs <- qDecs
+  uninterp <- lookupTypeName "Uninterpolated" >>= maybe (fail "Uninterpolated not in scope") returnQ
   let [DataD [] tName [] Nothing constrs deriv] = decs
       [RecC cName vars] = constrs
       primedName = mkName (nameBase tName <> "'")
@@ -125,10 +127,16 @@ withUninterpolatedRecord qDecs = do
   primed <- TH.dataD (pure []) primedName tvs Nothing [con] (returnQ <$> deriv)
   normalSyn <- TH.tySynD (simpleName tName) [] $
     returnQ $ foldl (\ t v -> AppT t (toSimpleType v)) (ConT primedName) vars
-  uninterp <- lookupTypeName "Uninterpolated" >>= maybe (fail "Uninterpolated not in scope") returnQ
   uninterpolatedSyn <- TH.tySynD (mkName $ "Uninterpolated" <> nameBase tName) [] $
-    returnQ $ foldl (\ t v -> AppT t (AppT (ConT uninterp) (toSimpleType v))) (ConT primedName) vars
+    returnQ $ foldl (\ t v -> AppT t (mapAppT (AppT (ConT uninterp)) (toSimpleType v))) (ConT primedName) vars
   pure [primed, normalSyn, uninterpolatedSyn]
+  where
+    -- Apply a type constructor, pushing it inside an outer type application.
+    -- Note: we might want map only under certain constructors, (e.g. Maybe, []). The idea is to
+    mapAppT :: (Type -> Type) -> Type -> Type
+    mapAppT f = \ case
+      AppT c t -> AppT c (f t)
+      t -> f t
 
 -- TODO:
 -- withUninterpolatedSum?
