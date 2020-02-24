@@ -17,7 +17,8 @@ import Data.Sequences (isPrefixOf)
 import Data.Set (Set)
 import qualified Data.Text as T
 import System.Environment (getEnvironment)
-import Test.QuickCheck (Arbitrary, Gen, arbitrary, frequency, listOf1, oneof, suchThat)
+import Test.QuickCheck
+  (Arbitrary, Arbitrary1, Gen, arbitrary, frequency, liftArbitrary, listOf1, oneof, suchThat)
 import Text.Read (readMaybe)
 
 -- |Newtype wrapper for an environment variable key.
@@ -194,13 +195,19 @@ instance Arbitrary TemplateKey where
   arbitrary = TemplateKey <$> noColons
 
 instance {-# OVERLAPPABLE #-} Arbitrary a => Arbitrary (Uninterpolated a) where
-  arbitrary = oneof
-    [ Literal <$> arbitrary
-    , Templated <$> (Template <$> arbitrary <*> arbitrary)
-    ]
+  arbitrary = liftArbitrary arbitrary
 
 instance {-# OVERLAPPING #-} Arbitrary (Uninterpolated T.Text) where
+  -- FIXME: it seems this can't be expressed using liftArbitrary. Does this instance still protect
+  -- against generating bad keys?
   arbitrary = oneof
     [ Literal <$> noEnv
     , Templated <$> (Template <$> arbitrary <*> maybeGen noColons)
+    ]
+
+instance Arbitrary1 Uninterpolated where
+  -- FIXME: if a is Text, this is not going to do the smart thing.
+  liftArbitrary genA = oneof
+    [ Literal <$> genA
+    , Templated <$> (Template <$> arbitrary <*> liftArbitrary genA)
     ]
