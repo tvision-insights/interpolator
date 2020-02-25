@@ -18,7 +18,9 @@ import Language.Haskell.TH
   , mkName
   , nameBase
   , newName
+  , pprint
   , reify
+  , reportError
   )
 import qualified Language.Haskell.TH.Lib as TH
 import Language.Haskell.TH.Syntax (returnQ)
@@ -81,10 +83,10 @@ makeInterpolatorSumInstance tyName = do
         ]
     ]
 
--- |When applied to a simple, monomorphic record data type, substitute a fully-polymorphic data type
+-- |When applied to a simple data type declaration, substitute a fully-polymorphic data type
 -- and type aliases for "normal" and "uninterpolated" variants.
 --
--- For example:
+-- For example, a record or newtype (using record syntax):
 --
 -- @
 --   withUninterpolatedRecord [d|
@@ -112,33 +114,45 @@ makeInterpolatorSumInstance tyName = do
 -- applied to the /inner/ type, which is probably what you want for 'Maybe' (as in the example),
 -- @[]@, and so on, but won't work in other cases where there's a
 -- 'Data.Interpolation.FromTemplateValue' instance for some non-trivial user type.
-withUninterpolatedRecord :: Q [Dec] -> Q [Dec]
-withUninterpolatedRecord qDecs = do
+withUninterpolated :: Q [Dec] -> Q [Dec]
+withUninterpolated qDecs = do
   decs <- qDecs
   uninterp <- lookupTypeName "Uninterpolated" >>= maybe (fail "Uninterpolated not in scope") returnQ
-  let [DataD [] tName [] Nothing constrs deriv] = decs
-      [RecC cName vars] = constrs
-      primedName = mkName (nameBase tName <> "'")
-      simpleName = mkName . nameBase
-      toTV (n, _, _) = TH.plainTV (simpleName n)  -- TODO: strip prefix?
-      tvs = toTV <$> vars
-      toField (n, s, _) = (simpleName n, s, VarT (simpleName n))
-      fs = toField <$> vars
-      con = TH.recC (simpleName cName) (returnQ <$> fs)
-      toSimpleType (_, _, t) = t
-  primed <- TH.dataD (pure []) primedName tvs Nothing [con] (returnQ <$> deriv)
-  normalSyn <- TH.tySynD (simpleName tName) [] $
-    returnQ $ foldl (\ t v -> AppT t (toSimpleType v)) (ConT primedName) vars
-  uninterpolatedSyn <- TH.tySynD (mkName $ "Uninterpolated" <> nameBase tName) [] $
-    returnQ $ foldl (\ t v -> AppT t (mapAppT (AppT (ConT uninterp)) (toSimpleType v))) (ConT primedName) vars
-  pure [primed, normalSyn, uninterpolatedSyn]
+  case decs of
+    [DataD [] tName [] Nothing [RecC cName fields] deriv] -> do
+      let con = TH.recC (simpleName cName) (returnQ <$> (fieldToPolyField <$> fields))
+      primedDecl <- TH.dataD (pure []) (primedName tName) (fieldToTypeVar <$> fields) Nothing [con] (returnQ <$> deriv)
+      normalSyn <- TH.tySynD (simpleName tName) [] $
+        returnQ $ foldl (\ t v -> AppT t (fieldToSimpleType v)) (ConT (primedName tName)) fields
+      uninterpolatedSyn <- TH.tySynD (mkName $ "Uninterpolated" <> nameBase tName) [] $
+        returnQ $ foldl (\ t v -> AppT t (mapAppT (AppT (ConT uninterp)) (fieldToSimpleType v))) (ConT (primedName tName)) fields
+      pure [primedDecl, normalSyn, uninterpolatedSyn]
+
+    [NewtypeD [] tName [] Nothing (RecC cName [field]) deriv] -> do
+      -- TODO: use the type name, lower-cased, instead of the field name, for the type var?
+      let con = TH.recC (simpleName cName) (returnQ <$> [fieldToPolyField field])
+      primedDecl <- TH.newtypeD (pure []) (primedName tName) [fieldToTypeVar field] Nothing con (returnQ <$> deriv)
+      normalSyn <- TH.tySynD (simpleName tName) [] $
+        returnQ $ AppT (ConT (primedName tName)) (fieldToSimpleType field)
+      uninterpolatedSyn <- TH.tySynD (mkName $ "Uninterpolated" <> nameBase tName) [] $
+        returnQ $ AppT (ConT (primedName tName)) (mapAppT (AppT (ConT uninterp)) (fieldToSimpleType field))
+      pure [primedDecl, normalSyn, uninterpolatedSyn]
+
+    _ -> do
+      reportError $ "Can't handle declaration: " <> pprint decs
+      reportError $ "AST: " <> show decs -- HACK
+      pure []
   where
+    primedName n = mkName (nameBase n <> "'")
+    simpleName = mkName . nameBase
+
+    fieldToTypeVar (n, _, _) = TH.plainTV (simpleName n)  -- TODO: strip prefix?
+    fieldToPolyField (n, s, _) = (simpleName n, s, VarT (simpleName n))
+    fieldToSimpleType (_, _, t) = t
+
     -- Apply a type constructor, pushing it inside an outer type application.
-    -- Note: we might want map only under certain constructors, (e.g. Maybe, []). The idea is to
+    -- Note: we might want map only under certain constructors, (e.g. Maybe, []).
     mapAppT :: (Type -> Type) -> Type -> Type
     mapAppT f = \ case
       AppT c t -> AppT c (f t)
       t -> f t
-
--- TODO:
--- withUninterpolatedSum?

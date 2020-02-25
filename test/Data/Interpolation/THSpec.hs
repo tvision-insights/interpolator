@@ -7,17 +7,22 @@ import Data.Containers (mapFromList)
 import Data.Either.Validation (validationToEither)
 import Data.Profunctor.Product.Default (def)
 import Data.Profunctor.Product.TH (makeAdaptorAndInstance)
-import qualified Data.Text as T
+import Data.Text (Text)
 import Test.Hspec (Spec, describe, it, shouldBe)
 
 -- the modules being tested
 import Data.Interpolation
 import Data.Interpolation.TH
 
-withUninterpolatedRecord [d|
+withUninterpolated [d|
+  newtype BarName = BarName { unBarName :: Text }
+    deriving (Eq, Ord, Show, FromTemplateValue, ToTemplateValue)
+  |]
+
+withUninterpolated [d|
   data Bar = Bar
-    { barA :: Int
-    , barB :: Maybe T.Text
+    { barA :: BarName
+    , barB :: Maybe Int
     , barC :: [Bool]
     } deriving (Eq, Ord, Show)
   |]
@@ -48,8 +53,8 @@ run = validationToEither . flip runReader defaultContext . runInterpolator fooIn
 
     defaultContext :: InterpolationContext
     defaultContext = InterpolationContext . mapFromList $
-      [ (key1, (TemplateValue "1"))
-      , (key2, (TemplateValue "asdf"))
+      [ (key1, (TemplateValue "asdf"))
+      , (key2, (TemplateValue "1"))
       , (key3, (TemplateValue "2"))
       , (key4, (TemplateValue "true"))
       ]
@@ -60,7 +65,7 @@ spec = describe "Shared.Interpolation.THSpec" $ do
 
   it "interpolates over all branches" $ do
     run (FooBar (Bar (Templated $ Template key1 Nothing) (Just . Templated $ Template key2 Nothing) []))
-      `shouldBe` Right (FooBar $ Bar 1 (Just "asdf") [])
+      `shouldBe` Right (FooBar $ Bar (BarName "asdf") (Just 1) [])
     run (FooInt (Templated $ Template key3 Nothing)) `shouldBe` Right (FooInt 2)
     run (FooBool (Templated $ Template key4 Nothing)) `shouldBe` Right (FooBool True)
     run FooNone `shouldBe` Right FooNone
