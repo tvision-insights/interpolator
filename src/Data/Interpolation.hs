@@ -6,6 +6,7 @@ import Control.Applicative ((<|>))
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Reader (Reader, asks, runReader)
 import Data.Aeson (FromJSON, ToJSON, Value (String), parseJSON, toJSON, withText)
+import Data.Char (isAlphaNum)
 import Data.Containers (mapFromList, setFromList, setToList)
 import Data.Either.Validation (Validation (Failure, Success), validationToEither)
 import Data.Map (Map, lookup)
@@ -17,8 +18,12 @@ import Data.Sequences (isPrefixOf)
 import Data.Set (Set)
 import qualified Data.Text as T
 import System.Environment (getEnvironment)
+<<<<<<< HEAD
 import Test.QuickCheck
   (Arbitrary, Arbitrary1, Gen, arbitrary, frequency, liftArbitrary, listOf1, oneof, suchThat)
+=======
+import Test.QuickCheck (Arbitrary, Arbitrary1, arbitrary, arbitrary1, liftArbitrary, listOf1, oneof, suchThat)
+>>>>>>> upstream/master
 import Text.Read (readMaybe)
 
 -- |Newtype wrapper for an environment variable key.
@@ -184,30 +189,20 @@ instance (ToTemplateValue a, ToJSON a) => ToJSON (Uninterpolated a) where
     Templated x -> toJSON x
     Literal x -> toJSON x
 
-maybeGen :: Gen a -> Gen (Maybe a)
-maybeGen x = frequency [(1, pure Nothing), (3, Just <$> x)]
-
-noEnv, noColons :: Gen T.Text
-noEnv = fmap T.pack $ arbitrary `suchThat` (\ s -> not ("_env:" `isPrefixOf` s) && not (null s))
-noColons = fmap T.pack . listOf1 $ arbitrary `suchThat` (/= ':')
-
 instance Arbitrary TemplateKey where
-  arbitrary = TemplateKey <$> noColons
-
-instance {-# OVERLAPPABLE #-} Arbitrary a => Arbitrary (Uninterpolated a) where
-  arbitrary = liftArbitrary arbitrary
-
-instance {-# OVERLAPPING #-} Arbitrary (Uninterpolated T.Text) where
-  -- FIXME: it seems this can't be expressed using liftArbitrary. Does this instance still protect
-  -- against generating bad keys?
-  arbitrary = oneof
-    [ Literal <$> noEnv
-    , Templated <$> (Template <$> arbitrary <*> maybeGen noColons)
-    ]
+  arbitrary = TemplateKey <$> varNameAllowed
+    where varNameAllowed = fmap T.pack . listOf1 $ arbitrary `suchThat` (\c -> isAlphaNum c || c == '_')
 
 instance Arbitrary1 Uninterpolated where
-  -- FIXME: if a is Text, this is not going to do the smart thing.
-  liftArbitrary genA = oneof
-    [ Literal <$> genA
-    , Templated <$> (Template <$> arbitrary <*> liftArbitrary genA)
+  liftArbitrary g = oneof
+    [ Literal <$> g
+    , Templated <$> (Template <$> arbitrary <*> liftArbitrary g)
     ]
+
+instance {-# OVERLAPPABLE #-} Arbitrary a => Arbitrary (Uninterpolated a) where
+  arbitrary = arbitrary1
+
+instance {-# OVERLAPPING #-} Arbitrary (Uninterpolated T.Text) where
+  arbitrary = liftArbitrary noEnv
+    where noEnv = fmap T.pack $ arbitrary `suchThat` (\ s -> not ("_env:" `isPrefixOf` s) && not (null s))
+

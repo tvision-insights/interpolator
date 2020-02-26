@@ -1,12 +1,12 @@
 name: interpolator
-version: '0.2.0'
+version: '1.1.0'
 author: Dan Fithian <daniel.m.fithian@gmail.com>
 maintainer: TVision Insights
 license: MIT
 synopsis: 'Runtime interpolation of environment variables in records using profunctors'
 description: |
   Runtime interpolation of environment variables in records using profunctors. See
-  `https://github.com/tvision-insights/interpolator/README.md`.
+  the [README](https://github.com/tvision-insights/interpolator/blob/master/README.md).
 category: Data
 stability: experimental
 homepage: https://github.com/tvision-insights/interpolator
