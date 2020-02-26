@@ -27,14 +27,14 @@ withUninterpolated [d|
     } deriving (Eq, Ord, Show)
   |]
 
-data Foo' a b c
-  = FooBar a
-  | FooInt b
-  | FooBool c
-  | FooNone
-  deriving (Eq, Ord, Show)
-type UninterpolatedFoo = Foo' UninterpolatedBar (Uninterpolated Int) (Uninterpolated Bool)
-type Foo = Foo' Bar Int Bool
+withUninterpolated [d|
+  data Foo
+    = FooBar Bar
+    | FooInt Int
+    | FooBool Bool
+    | FooNone
+    deriving (Eq, Ord, Show)
+  |]
 
 makeAdaptorAndInstance "pBar" ''Bar'
 makeInterpolatorSumInstance ''Foo'
