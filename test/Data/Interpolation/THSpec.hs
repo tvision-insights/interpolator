@@ -14,12 +14,14 @@ import Test.Hspec (Spec, describe, it, shouldBe)
 import Data.Interpolation
 import Data.Interpolation.TH
 
+-- |A simple newtype with a derived instance for 'FromTemplateValue'; that instance will be in scope
+-- when the type is referred to later in this file.
 withUninterpolated [d|
   newtype BarName = BarName { unBarName :: Text }
     deriving (Eq, Ord, Show, FromTemplateValue, ToTemplateValue)
   |]
 
--- |A simple non-interpolable type.
+-- |A simple non-interpolatable type (no 'FromTemplateValue' instance.)
 data Quux
   = QuuxFuzzy
   | QuuxSmooth
@@ -28,9 +30,13 @@ data Quux
 withUninterpolated [d|
   data Bar = Bar
     { barA :: BarName
+      -- ^Because BarName has 'FromTemplateValue', it will be 'Uninterpolated BarName' in the generated type.
     , barB :: Maybe Int
+      -- ^No instance for 'Maybe Int', so this becomes 'Maybe (Uninterpolated Int)'.
     , barC :: [Bool]
+      -- ^Similarly, this becomes '[Uninterpolated Bool]'.
     , barD :: Quux
+      -- ^No 'FromTemplateValue' instance at all, so this is left as just 'Quux'.
     } deriving (Eq, Ord, Show)
   |]
 
