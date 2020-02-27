@@ -201,4 +201,3 @@ instance {-# OVERLAPPABLE #-} Arbitrary a => Arbitrary (Uninterpolated a) where
 instance {-# OVERLAPPING #-} Arbitrary (Uninterpolated T.Text) where
   arbitrary = liftArbitrary noEnv
     where noEnv = fmap T.pack $ arbitrary `suchThat` (\ s -> not ("_env:" `isPrefixOf` s) && not (null s))
-
