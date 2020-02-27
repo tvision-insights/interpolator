@@ -19,11 +19,18 @@ withUninterpolated [d|
     deriving (Eq, Ord, Show, FromTemplateValue, ToTemplateValue)
   |]
 
+-- |A simple non-interpolable type.
+data Quux
+  = QuuxFuzzy
+  | QuuxSmooth
+  deriving (Eq, Ord, Show)
+
 withUninterpolated [d|
   data Bar = Bar
     { barA :: BarName
     , barB :: Maybe Int
     , barC :: [Bool]
+    , barD :: Quux
     } deriving (Eq, Ord, Show)
   |]
 
@@ -64,8 +71,8 @@ spec = describe "Shared.Interpolation.THSpec" $ do
   it "if it compiles, it worked" True
 
   it "interpolates over all branches" $ do
-    run (FooBar (Bar (Templated $ Template key1 Nothing) (Just . Templated $ Template key2 Nothing) []))
-      `shouldBe` Right (FooBar $ Bar (BarName "asdf") (Just 1) [])
+    run (FooBar (Bar (Templated $ Template key1 Nothing) (Just . Templated $ Template key2 Nothing) [] QuuxFuzzy))
+      `shouldBe` Right (FooBar $ Bar (BarName "asdf") (Just 1) [] QuuxFuzzy)
     run (FooInt (Templated $ Template key3 Nothing)) `shouldBe` Right (FooInt 2)
     run (FooBool (Templated $ Template key4 Nothing)) `shouldBe` Right (FooBool True)
     run FooNone `shouldBe` Right FooNone
