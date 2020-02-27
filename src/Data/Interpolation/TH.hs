@@ -200,7 +200,7 @@ withUninterpolated qDecs = do
 
     -- Apply a type constructor, pushing it inside an outer type application, and into every type
     -- parameter, even in the presence of type synonyms (such as those generated here.)
-    -- If there is a 'FromTemplateValue' instance for an argument type, that constuctor is applied
+    -- If there is a 'FromTemplateValue' instance for an argument type, that constructor is applied
     -- to that type, with its structure left intact.
     mapAppT :: (Type -> Type) -> Type -> Q Type
     mapAppT f t = do
