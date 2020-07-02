@@ -3,10 +3,12 @@ module Data.Interpolation.TH
   , withUninterpolated
   , withPolymorphic
   , deriveUninterpolated
-  )where
+  ) where
 
+import Prelude
 import Data.Char (toLower)
 import Data.Either.Validation (Validation (Success))
+import Data.List (dropWhileEnd)
 import Data.Profunctor.Product.Default (Default, def)
 import Data.Semigroup ((<>))
 import Data.Sequences (catMaybes, replicateM, singleton, stripPrefix)
@@ -29,7 +31,7 @@ import Language.Haskell.TH
   )
 import qualified Language.Haskell.TH.Lib as TH
 import Language.Haskell.TH.Syntax (returnQ)
-import Prelude
+
 
 import Data.Interpolation (FromTemplateValue, Interpolator (Interpolator), runInterpolator)
 
@@ -288,9 +290,11 @@ mapUninterp typ = do
         t                     -> mapOne t
 
       mapOne :: Type -> Q Type
-      mapOne t =
-        isInstance ''FromTemplateValue [t] >>= \ case
-          True -> pure (wrap t)
+      mapOne t = do
+        -- reportWarning $ "mapOne: " <> show t
+
+        mapped <- isInstance ''FromTemplateValue [t] >>= \ case
+          True -> pure $ wrap t
           False -> case t of
             ConT n -> do
               info <- reify n
@@ -305,5 +309,37 @@ mapUninterp typ = do
             other -> do
               reportError $ "Can't handle type: " <> pprint other
               pure other
+
+        lookupAlias mapped >>= \ case
+          Just uName -> pure $ ConT uName
+          Nothing -> pure mapped
+
+      -- Name of the "Uninterpolated..." alias which is already in scope and exactly matches
+      -- the given type, if any. This prevents the type aliases for nested types from getting
+      -- out of hand, both in Haddock and in compile errors.
+      lookupAlias :: Type -> Q (Maybe Name)
+      lookupAlias t =
+        case constrName t of
+          Nothing -> pure Nothing
+          Just cName -> do
+            let uninterpName = "Uninterpolated" <> dropWhileEnd (== '\'') (nameBase cName)
+            lookupTypeName uninterpName >>= \ case
+              Nothing -> pure Nothing
+              Just uName -> do
+                uInfo <- reify uName
+                case uInfo of
+                  TyConI (TySynD _ [] namedT) | namedT == t -> do
+                    pure $ Just uName
+                  _ -> do
+                    pure Nothing
+
+      -- Name of the constructor at the bottom-left of a chain of AppT; that is, the type
+      -- constructor being applied to a series of argument types, if that's what it looks like.
+      constrName :: Type -> Maybe Name
+      constrName = \ case
+        ConT name -> Just name
+        AppT t _ -> constrName t
+        _ -> Nothing
+
 
   mapRight typ
