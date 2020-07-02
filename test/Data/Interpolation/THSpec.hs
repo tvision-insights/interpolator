@@ -7,7 +7,7 @@ import Data.Containers (mapFromList)
 import Data.Either.Validation (validationToEither)
 import Data.Profunctor.Product.Default (def)
 import Data.Profunctor.Product.TH (makeAdaptorAndInstance)
-import Data.Text (Text)
+import Data.Text (Text, toUpper)
 import Test.Hspec (Spec, describe, it, shouldBe)
 
 -- the modules being tested
@@ -40,11 +40,19 @@ withUninterpolated [d|
     } deriving (Eq, Ord, Show)
   |]
 
-withUninterpolated [d|
+-- |A type that will have its FromTemplateValue instance defined manually. For demonstration
+-- purposes, this is just a string that is upper-cased when it is interpolated from a template.
+newtype Upcased = Upcased { unUpcased :: Text }
+  deriving (Eq, Show)
+
+-- |Note: want the uninterpolated type for this sum to account for the late-defined
+-- `FromTemplateValue Upcased` instance, so derive only the polymorphic type now:
+withPolymorphic [d|
   data Foo
     = FooBar Bar
     | FooInt Int
     | FooBool Bool
+    | FooUpcased Upcased
     | FooNone
     deriving (Eq, Ord, Show)
   |]
@@ -52,11 +60,32 @@ withUninterpolated [d|
 makeAdaptorAndInstance "pBar" ''Bar'
 makeInterpolatorSumInstance ''Foo'
 
-key1, key2, key3, key4 :: TemplateKey
+instance FromTemplateValue Upcased where
+  parseTemplateValue = Just . Upcased . toUpper . unTemplateValue
+
+-- Finally, derive the uninterpolated type for Foo, with the instance for Upcased defined.
+deriveUninterpolated ''Foo
+
+-- --
+-- -- Another newtype, this time with a custom FromTemplateValue instance which is defined after the
+-- -- type, and a record type that uses it.
+-- --
+
+-- newtype BazName = BazName { unBazName :: Text }
+--   deriving (Eq, Ord, Show)
+
+-- withPolymorphic [d|
+--   data Baz = Baz
+--     { bazName :: BazName
+--     } deriving (Eq, Ord, Show)
+--   |]
+
+key1, key2, key3, key4, key5 :: TemplateKey
 key1 = TemplateKey "key1"
 key2 = TemplateKey "key2"
 key3 = TemplateKey "key3"
 key4 = TemplateKey "key4"
+key5 = TemplateKey "key5"
 
 run :: UninterpolatedFoo -> Either [InterpolationFailure] Foo
 run = validationToEither . flip runReader defaultContext . runInterpolator fooInterpolator
@@ -66,10 +95,11 @@ run = validationToEither . flip runReader defaultContext . runInterpolator fooIn
 
     defaultContext :: InterpolationContext
     defaultContext = InterpolationContext . mapFromList $
-      [ (key1, (TemplateValue "asdf"))
-      , (key2, (TemplateValue "1"))
-      , (key3, (TemplateValue "2"))
-      , (key4, (TemplateValue "true"))
+      [ (key1, TemplateValue "asdf")
+      , (key2, TemplateValue "1")
+      , (key3, TemplateValue "2")
+      , (key4, TemplateValue "true")
+      , (key5, TemplateValue "Wow")
       ]
 
 spec :: Spec
@@ -81,4 +111,5 @@ spec = describe "Shared.Interpolation.THSpec" $ do
       `shouldBe` Right (FooBar $ Bar (BarName "asdf") (Just 1) [] QuuxFuzzy)
     run (FooInt (Templated $ Template key3 Nothing)) `shouldBe` Right (FooInt 2)
     run (FooBool (Templated $ Template key4 Nothing)) `shouldBe` Right (FooBool True)
+    run (FooUpcased (Templated $ Template key5 Nothing)) `shouldBe` Right (FooUpcased (Upcased "WOW"))
     run FooNone `shouldBe` Right FooNone
