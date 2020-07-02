@@ -16,10 +16,8 @@ import Data.Interpolation.TH
 
 -- |A simple newtype with a derived instance for 'FromTemplateValue'; that instance will be in scope
 -- when the type is referred to later in this file.
-withUninterpolated [d|
-  newtype BarName = BarName { unBarName :: Text }
-    deriving (Eq, Ord, Show, FromTemplateValue, ToTemplateValue)
-  |]
+newtype BarName = BarName { unBarName :: Text }
+  deriving (Eq, Ord, Show, FromTemplateValue, ToTemplateValue)
 
 -- |A simple non-interpolatable type (no 'FromTemplateValue' instance.)
 data Quux
