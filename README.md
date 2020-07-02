@@ -17,16 +17,25 @@ and [Yaml](http://hackage.haskell.org/package/yaml)'s use of environment variabl
 Define your records like this:
 
 ```haskell
+withUninterpolated [d|
+  data Foo = Foo
+    { a :: Text
+    , b :: Int
+    , c :: Bool
+    } deriving (Eq, Ord, Show)
+  |]
+```
+
+The following polymorphic type and synonyms are generated for you (or you can write similar ones
+yourself if you like):
+
+```haskell
+-- Generated!
 data Foo' t_a t_b t_c = Foo
   { a :: t_a
   , b :: t_b
   , c :: t_c
   } deriving (Eq, Ord, Show)
-```
-
-Add your "uninterpolated" and "interpolated" types:
-
-```haskell
 type UninterpolatedFoo = Foo' (Uninterpolated Text) (Uninterpolated Int) (Uninterpolated Bool)
 type Foo = Foo' Text Int Bool
 ```
