@@ -12,13 +12,16 @@ import Basic (Foo, UninterpolatedFoo)
 import Data.Interpolation
 import Data.Interpolation.TH
 
-data Bar' a b
-  = Bar1 a
-  | Bar2 b
-  | Bar3
-  deriving (Eq, Ord, Show)
-type UninterpolatedBar = Bar' (UninterpolatedFoo) (Uninterpolated Int)
-type Bar = Bar' Foo Int
+withUninterpolated [d|
+  data Bar
+    = Bar1 Foo
+    | Bar2 Int
+    | Bar3
+    deriving (Eq, Ord, Show)
+  |]
+-- Note, these are generated:
+-- type UninterpolatedBar = Bar' UninterpolatedFoo (Uninterpolated Int)
+-- type Bar = Bar' Foo Int
 
 makeInterpolatorSumInstance ''Bar'
 
