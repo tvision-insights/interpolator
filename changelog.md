@@ -1,3 +1,11 @@
+1.2.0
+======
+
+- @mossprescott
+    - Add Template Haskell splices to generate polymorphic types and "simple" and "Uninterpolated"
+      synonyms: `withUninterpolated`, `withPolymorphic`, and `deriveUninterpolated`.
+
+
 1.0.0
 =======
 
