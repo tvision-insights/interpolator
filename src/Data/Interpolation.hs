@@ -18,7 +18,8 @@ import Data.Sequences (isPrefixOf)
 import Data.Set (Set)
 import qualified Data.Text as T
 import System.Environment (getEnvironment)
-import Test.QuickCheck (Arbitrary, Arbitrary1, arbitrary, arbitrary1, liftArbitrary, listOf1, oneof, suchThat)
+import Test.QuickCheck
+  (Arbitrary, Arbitrary1, arbitrary, arbitrary1, liftArbitrary, listOf1, oneof, suchThat)
 import Text.Read (readMaybe)
 
 -- |Newtype wrapper for an environment variable key.
