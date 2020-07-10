@@ -260,7 +260,7 @@ withPolymorphic_ qDecs = do
     unPrefixedFieldName tName = mkName . unCap . stripped (unCap $ nameBase tName) . stripped "_" . nameBase
 
     fieldToTypeVar tName (fName, _, _) = TH.plainTV (unPrefixedFieldName tName fName)
-    fieldToPolyField tName (fName, s, _) = (n, s, VarT n) where n = unPrefixedFieldName tName fName
+    fieldToPolyField tName (fName, s, _) = (simpleName fName, s, VarT (unPrefixedFieldName tName fName))
     fieldToSimpleType (_, _, t) = t
 
     niceName prefix = mkName . unCap . stripped (nameBase prefix) . nameBase

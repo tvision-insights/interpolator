@@ -78,6 +78,15 @@ deriveUninterpolated ''Foo
 --     } deriving (Eq, Ord, Show)
 --   |]
 
+-- Verify the type and field names are as expected:
+aBar :: Bar
+aBar = Bar
+  { barA = BarName "abc"
+  , barB = Just 1
+  , barC = [False]
+  , barD = QuuxFuzzy
+  }
+
 key1, key2, key3, key4, key5 :: TemplateKey
 key1 = TemplateKey "key1"
 key2 = TemplateKey "key2"
