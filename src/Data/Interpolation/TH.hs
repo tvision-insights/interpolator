@@ -215,8 +215,8 @@ withPolymorphic_ qDecs = do
   case decs of
     -- "data" with a single record constructor:
     [DataD [] tName [] Nothing [RecC cName fields] deriv] -> do
-      let con = TH.recC (simpleName cName) (returnQ <$> (fieldToPolyField <$> fields))
-      primedDecl <- TH.dataD (pure []) (primedName tName) (fieldToTypeVar <$> fields) Nothing [con] (returnQ <$> deriv)
+      let con = TH.recC (simpleName cName) (returnQ <$> (fieldToPolyField tName <$> fields))
+      primedDecl <- TH.dataD (pure []) (primedName tName) (fieldToTypeVar tName <$> fields) Nothing [con] (returnQ <$> deriv)
       normalSyn <- TH.tySynD (simpleName tName) [] $
         returnQ $ foldl (\ t v -> AppT t (fieldToSimpleType v)) (ConT (primedName tName)) fields
       pure (primedDecl, normalSyn)
@@ -224,8 +224,8 @@ withPolymorphic_ qDecs = do
     -- "newtype" with a single record constructor:
     [NewtypeD [] tName [] Nothing (RecC cName [field]) deriv] -> do
       -- TODO: use the type name, lower-cased, instead of the field name, for the type var?
-      let con = TH.recC (simpleName cName) (returnQ <$> [fieldToPolyField field])
-      primedDecl <- TH.newtypeD (pure []) (primedName tName) [fieldToTypeVar field] Nothing con (returnQ <$> deriv)
+      let con = TH.recC (simpleName cName) (returnQ <$> [fieldToPolyField tName field])
+      primedDecl <- TH.newtypeD (pure []) (primedName tName) [fieldToTypeVar tName field] Nothing con (returnQ <$> deriv)
       normalSyn <- TH.tySynD (simpleName tName) [] $
         returnQ $ AppT (ConT (primedName tName)) (fieldToSimpleType field)
       pure (primedDecl, normalSyn)
@@ -250,14 +250,21 @@ withPolymorphic_ qDecs = do
       fail $ "Can't handle declaration: " <> pprint decs
 
   where
+    -- The same name, with a "'" added to the end:
     primedName n = mkName (nameBase n <> "'")
+
+    -- The same name, in a fresh context:
     simpleName = mkName . nameBase
 
-    fieldToTypeVar (n, _, _) = TH.plainTV (simpleName n)  -- TODO: strip prefix?
-    fieldToPolyField (n, s, _) = (simpleName n, s, VarT (simpleName n))
+    -- Remove leading "_" and type name, if either is present:
+    unPrefixedFieldName tName = mkName . unCap . stripped (unCap $ nameBase tName) . stripped "_" . nameBase
+
+    fieldToTypeVar tName (fName, _, _) = TH.plainTV (unPrefixedFieldName tName fName)
+    fieldToPolyField tName (fName, s, _) = (n, s, VarT n) where n = unPrefixedFieldName tName fName
     fieldToSimpleType (_, _, t) = t
 
-    niceName prefix = mkName . unCap . (\ s -> maybe s id (stripPrefix (nameBase prefix) s)) . nameBase
+    niceName prefix = mkName . unCap . stripped (nameBase prefix) . nameBase
+    stripped prefix str = maybe str id (stripPrefix prefix str)
     unCap = \ case
       c : cs -> toLower c : cs
       other -> other
