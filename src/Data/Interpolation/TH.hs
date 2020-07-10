@@ -257,13 +257,20 @@ withPolymorphic_ qDecs = do
     simpleName = mkName . nameBase
 
     -- Remove leading "_" and type name, if either is present:
-    unPrefixedFieldName tName = mkName . unCap . stripped (unCap $ nameBase tName) . stripped "_" . nameBase
+    unPrefixedFieldName tName = mkName . avoidKeywords . unCap . stripped (unCap $ nameBase tName) . stripped "_" . nameBase
 
     fieldToTypeVar tName (fName, _, _) = TH.plainTV (unPrefixedFieldName tName fName)
     fieldToPolyField tName (fName, s, _) = (simpleName fName, s, VarT (unPrefixedFieldName tName fName))
     fieldToSimpleType (_, _, t) = t
 
-    niceName prefix = mkName . unCap . stripped (nameBase prefix) . nameBase
+    niceName prefix = mkName . avoidKeywords. unCap . stripped (nameBase prefix) . nameBase
+    avoidKeywords str = if str `elem` likelyKeywords then str <> "_" else str
+      where
+        likelyKeywords =
+          [ "as", "case", "class", "data", "default", "deriving", "do", "else", "family", "forall"
+          , "foreign", "if", "in", "import", "infix", "infixl", "infixr", "instance", "hiding"
+          , "let", "mdo", "module", "newtype", "of", "proc", "qualified", "rec", "then", "type", "where"
+          ]
     stripped prefix str = maybe str id (stripPrefix prefix str)
     unCap = \ case
       c : cs -> toLower c : cs
