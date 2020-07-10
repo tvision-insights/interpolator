@@ -80,7 +80,7 @@ makeInterpolatorSumInstance tyName = do
         1 -> do
           x <- newName "x"
           TH.match (TH.conP c [TH.varP x]) (TH.normalB [| fmap $(TH.conE c) <$> runInterpolator def $(TH.varE x) |]) []
-        _ -> fail $ "can only match sum constructors up to 1 argument"
+        _ -> fail "can only match sum constructors up to 1 argument"
   sequence
     [ TH.instanceD
         (TH.cxt contextConstraints)
