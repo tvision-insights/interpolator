@@ -1,3 +1,9 @@
+1.1.0.2
+======
+
+- @mossprescott
+    - Re-uploading to clean up an extraneous file in the bundle.
+
 1.1.0.1
 ======
 
@@ -11,7 +17,8 @@
 - @mossprescott
     - Added Template Haskell splices to generate polymorphic types and "simple" and "Uninterpolated"
       synonyms: `withUninterpolated`, `withPolymorphic`, and `deriveUninterpolated`.
-
+- Note: this release does not contain any breaking changes, and should have been only a minor
+  version bump (i.e. 1.0.1).
 
 1.0.0
 =======
