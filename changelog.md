@@ -1,8 +1,15 @@
+1.1.0.1
+======
+
+- @mossprescott
+    - Improved usability of generated record types by stripping common prefixes when deriving
+      type parameter names from field names.
+
 1.1.0
 ======
 
 - @mossprescott
-    - Add Template Haskell splices to generate polymorphic types and "simple" and "Uninterpolated"
+    - Added Template Haskell splices to generate polymorphic types and "simple" and "Uninterpolated"
       synonyms: `withUninterpolated`, `withPolymorphic`, and `deriveUninterpolated`.
 
 

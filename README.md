@@ -19,9 +19,9 @@ Define your records like this:
 ```haskell
 withUninterpolated [d|
   data Foo = Foo
-    { a :: Text
-    , b :: Int
-    , c :: Bool
+    { _fooA :: Text
+    , _fooB :: Int
+    , _fooC :: Bool
     } deriving (Eq, Ord, Show)
   |]
 ```
@@ -31,10 +31,10 @@ yourself if you like):
 
 ```haskell
 -- Generated!
-data Foo' t_a t_b t_c = Foo
-  { a :: t_a
-  , b :: t_b
-  , c :: t_c
+data Foo' a b c = Foo
+  { _fooA :: a
+  , _fooB :: b
+  , _fooC :: c
   } deriving (Eq, Ord, Show)
 type UninterpolatedFoo = Foo' (Uninterpolated Text) (Uninterpolated Int) (Uninterpolated Bool)
 type Foo = Foo' Text Int Bool

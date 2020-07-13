@@ -27,14 +27,16 @@ data Quux
 
 withUninterpolated [d|
   data Bar = Bar
-    { barA :: BarName
+    { barName  :: BarName
       -- ^Because BarName has 'FromTemplateValue', it will be 'Uninterpolated BarName' in the generated type.
-    , barB :: Maybe Int
+    , barNum   :: Maybe Int
       -- ^No instance for 'Maybe Int', so this becomes 'Maybe (Uninterpolated Int)'.
-    , barC :: [Bool]
+    , barFlags :: [Bool]
       -- ^Similarly, this becomes '[Uninterpolated Bool]'.
-    , barD :: Quux
+    , barData  :: Quux
       -- ^No 'FromTemplateValue' instance at all, so this is left as just 'Quux'.
+      -- Also note: the generated type parameter for this one is called 'data_' to
+      -- avoid a syntax error.
     } deriving (Eq, Ord, Show)
   |]
 
@@ -77,6 +79,15 @@ deriveUninterpolated ''Foo
 --     { bazName :: BazName
 --     } deriving (Eq, Ord, Show)
 --   |]
+
+-- Verify the type and field names are as expected:
+aBar :: Bar
+aBar = Bar
+  { barName = BarName "abc"
+  , barNum = Just 1
+  , barFlags = [False]
+  , barData = QuuxFuzzy
+  }
 
 key1, key2, key3, key4, key5 :: TemplateKey
 key1 = TemplateKey "key1"
