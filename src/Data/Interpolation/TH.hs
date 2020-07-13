@@ -305,8 +305,6 @@ mapUninterp typ = do
 
       mapOne :: Type -> Q Type
       mapOne t = do
-        -- reportWarning $ "mapOne: " <> show t
-
         mapped <- isInstance ''FromTemplateValue [t] >>= \ case
           True -> pure $ wrap t
           False -> case t of
