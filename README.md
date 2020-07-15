@@ -1,4 +1,4 @@
-# Interpolator
+# Interpolator [![CI][CI badge]][CI page] [![Hackage][Hackage badge]][Hackage page]
 
 Runtime interpolation of environment variables in records using profunctors.
 
@@ -124,3 +124,8 @@ the `Default` instance as we did above with `fooInterpolator`.
 
 Feel free to contact us on fpslack (@dfithian, @mprescot, @hkailahi), create an issue. Contributions
 welcome!
+
+[CI page]: https://travis-ci.org/tvision-insights/interpolator
+[CI badge]: https://travis-ci.org/tvision-insights/interpolator.svg
+[Hackage page]: https://hackage.haskell.org/package/interpolator
+[Hackage badge]: https://img.shields.io/hackage/v/interpolator.svg
